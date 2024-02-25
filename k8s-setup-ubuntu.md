@@ -5,6 +5,7 @@
 ### 必要な機材などを用意
 - RaspberryPi4 ModelB/8GB（中古、マスターノード）
 - RaspberryPi4 ModelB/4GB（中古、ワーカーノード）
+- PoE Hat x2
 - TP-Link TL-SG1005P（スイッチングハブ）
 - KIOXIA microSD 16GB x4
 - LANケーブル cat6 20cm x10
@@ -43,6 +44,10 @@ network:
 ホスト名も変更する。マスターノードは`k8s-master`、ワーカーノードは`k8s-worker01`と設定した。
 ```
 sudo vim /etc/hostname
+```
+システム時刻のタイムゾーンをAsia/Tokyoに設定する。
+```
+sudo timedatectl set-timezone Asia/Tokyo
 ```
 RaspberryPi用のVXLAN拡張モジュールをインストールした。これがないとCNIが動かない。
 ```
@@ -92,13 +97,11 @@ export CRIO_VERSION=1.28
 CRI-Oのkubicリポジトリを追加した。
 ```
 echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /"| sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-
 echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VERSION/$OS/ /"|sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION.list
 ```
 GPGキーをaptのパッケージリポジトリに追加した。
 ```
 curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION/$OS/Release.key | sudo apt-key add -
-
 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | sudo apt-key add -
 ```
 aptのアップデートを行う。
@@ -136,7 +139,6 @@ plugin_dirs = [
 crio-bridgeの設定ファイルを削除し、最新のものをダウンロードする。
 ```
 sudo rm -f /etc/cni/net.d/100-crio-bridge.conf
-
 sudo curl -fsSLo /etc/cni/net.d/11-crio-ipv4-bridge.conflist https://raw.githubusercontent.com/cri-o/cri-o/main/contrib/cni/11-crio-ipv4-bridge.conflist
 ```
 crioを再起動し、設定を反映させる。
