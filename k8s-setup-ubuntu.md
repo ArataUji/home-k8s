@@ -205,12 +205,13 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 kubectl taint node k8s-master node-role.kubernetes.io/control-plane:NoSchedule-
 ```
-kubectlの補完機能とaliasによるコマンド省略を有効化する。
+`.bashrc`にコマンド省略と補完機能設定を書き込み、再読み込みする。 
 ```
 source <(kubectl completion bash)
 echo "source <(kubectl completion bash)" >> ~/.bashrc
-alias k=kubectl
-complete -F __start_kubectl k
+echo "alias k=kubectl" >> ~/.bashrc
+echo "complete -F __start_kubectl k" >> ~/.bashrc
+source ~/.bashrc
 ```
 
 #### ワーカーノードでの設定
@@ -227,4 +228,24 @@ k create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manif
 インストール用のリソースをスケジューリングする。
 ```
 k create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/custom-resources.yaml
+```
+
+#### metrics-serverの導入
+マスターノードでmetrics-serverをデプロイする。
+```
+k apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+そのままだとmetrics-serverが起動しないので、metrics-serverのDeploymentを編集する。
+```
+k edit deploy metrics-server -n kube-system
+```
+`args:`セクションに`--kubelet-insecure-tls`を追記する。
+```
+- args:
+  - --cert-dir=/tmp
+  - --secure-port=10250
+  - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+  - --kubelet-use-node-status-port
+  - --metric-resolution=15s
+  - --kubelet-insecure-tls
 ```
